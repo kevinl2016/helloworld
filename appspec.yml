@@ -1,0 +1,8 @@
+version: 0.0
+os: linux
+files:
+  - source: helloworld.js
+    destination: /webapps/helloworld.js
+  - source: helloworld.js
+    destination: /
+
