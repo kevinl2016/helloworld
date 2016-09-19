@@ -1,4 +1,5 @@
 #!/bin/sh
-if [[ -e /etc/init/helloworld.conf ]] && [[ $(status helloworld) ]]; then
-  sudo stop helloworld
-fi
+
+[[ -e /etc/init/helloworld.conf ]] && \
+  status helloworld | grep -q '^helloworld start/running, process' && \
+    [[ $? -eq 0 ]] && stop helloworld
