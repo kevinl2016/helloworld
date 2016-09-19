@@ -2,7 +2,13 @@ version: 0.0
 os: linux
 files:
   - source: helloworld.js
-    destination: /webapps/helloworld.js
-  - source: helloworld.js
-    destination: /
-
+    destination: /usr/local/helloworld/helloworld.js
+  - source: scripts/helloworld.conf
+    destination: /etc/init/helloworld.conf
+hooks:
+  BeforeInstall:
+    - location: scripts/stop.sh
+      timeout: 3600
+  ApplicationStart:
+    - location: scripts/start.sh
+      timeout: 3600
