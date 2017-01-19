@@ -1,9 +1,19 @@
 {
     "Parameters": {
+        "ECSClusterId": {
+            "Default": "",
+            "Description": "Name of the ECS cluster to deploy the application to",
+            "Type": "String"
+        },
         "PublicSubnet": {
             "ConstraintDescription": "PublicSubnet",
             "Description": "PublicSubnet",
             "Type": "List<AWS::EC2::Subnet::Id>"
+        },
+        "Tag": {
+            "Default": "",
+            "Description": "Tag to deploy",
+            "Type": "String"
         },
         "VpcId": {
             "Description": "VPC",
@@ -11,28 +21,52 @@
         }
     },
     "Resources": {
-        "LoadBalancer": {
+        "Listener": {
             "Properties": {
-                "ConnectionDrainingPolicy": {
-                    "Enabled": true,
-                    "Timeout": 10
-                },
-                "CrossZone": "true",
-                "HealthCheck": {
-                    "HealthyThreshold": "5",
-                    "Interval": "20",
-                    "Target": "HTTP:3000/",
-                    "Timeout": "15",
-                    "UnhealthyThreshold": "2"
-                },
-                "Listeners": [
+                "DefaultActions": [
                     {
-                        "InstancePort": "3000",
-                        "InstanceProtocol": "HTTP",
-                        "LoadBalancerPort": "3000",
-                        "Protocol": "HTTP"
+                        "TargetGroupArn": {
+                            "Ref": "TargetGroup"
+                        },
+                        "Type": "forward"
                     }
                 ],
+                "LoadBalancerArn": {
+                    "Ref": "LoadBalancer"
+                },
+                "Port": "3000",
+                "Protocol": "HTTP"
+            },
+            "Type": "AWS::ElasticLoadBalancingV2::Listener"
+        },
+        "ListenerRule": {
+            "Properties": {
+                "Actions": [
+                    {
+                        "TargetGroupArn": {
+                            "Ref": "TargetGroup"
+                        },
+                        "Type": "forward"
+                    }
+                ],
+                "Conditions": [
+                    {
+                        "Field": "path-pattern",
+                        "Values": [
+                            "/"
+                        ]
+                    }
+                ],
+                "ListenerArn": {
+                    "Ref": "Listener"
+                },
+                "Priority": "1"
+            },
+            "Type": "AWS::ElasticLoadBalancingV2::ListenerRule"
+        },
+        "LoadBalancer": {
+            "Properties": {
+                "Name": "helloworld",
                 "Scheme": "internet-facing",
                 "SecurityGroups": [
                     {
@@ -43,7 +77,7 @@
                     "Ref": "PublicSubnet"
                 }
             },
-            "Type": "AWS::ElasticLoadBalancing::LoadBalancer"
+            "Type": "AWS::ElasticLoadBalancingV2::LoadBalancer"
         },
         "LoadBalancerSecurityGroup": {
             "Properties": {
@@ -86,16 +120,38 @@
             },
             "Type": "AWS::IAM::Role"
         },
-        "service": {
+        "TargetGroup": {
+            "DependsOn": "LoadBalancer",
             "Properties": {
-                "Cluster": "ecs-cleaned-1-ECSCluster-V8PRH1P1WXZB",
+                "HealthCheckIntervalSeconds": "20",
+                "HealthCheckProtocol": "HTTP",
+                "HealthCheckTimeoutSeconds": "15",
+                "HealthyThresholdCount": "5",
+                "Matcher": {
+                    "HttpCode": "200"
+                },
+                "Port": 3000,
+                "Protocol": "HTTP",
+                "UnhealthyThresholdCount": "3",
+                "VpcId": {
+                    "Ref": "VpcId"
+                }
+            },
+            "Type": "AWS::ElasticLoadBalancingV2::TargetGroup"
+        },
+        "service": {
+            "DependsOn": "Listener",
+            "Properties": {
+                "Cluster": {
+                    "Ref": "ECSClusterId"
+                },
                 "DesiredCount": 1,
                 "LoadBalancers": [
                     {
                         "ContainerName": "mycontainer",
                         "ContainerPort": 3000,
-                        "LoadBalancerName": {
-                            "Ref": "LoadBalancer"
+                        "TargetGroupArn": {
+                            "Ref": "TargetGroup"
                         }
                     }
                 ],
@@ -113,14 +169,31 @@
                 "ContainerDefinitions": [
                     {
                         "Cpu": 256,
-                        "Image": "511912822958.dkr.ecr.us-east-1.amazonaws.com/helloworld:latest",
+                        "Image": {
+                            "Fn::Join": [
+                                "",
+                                [
+                                    {
+                                        "Ref": "AWS::AccountId"
+                                    },
+                                    ".dkr.ecr.",
+                                    {
+                                        "Ref": "AWS::Region"
+                                    },
+                                    ".amazonaws.com",
+                                    "helloworld",
+                                    ":",
+                                    {
+                                        "Ref": "Tag"
+                                    }
+                                ]
+                            ]
+                        },
                         "Memory": 32,
                         "Name": "mycontainer",
                         "PortMappings": [
                             {
-                                "ContainerPort": 3000,
-                                "HostPort": 3000,
-                                "Protocol": "tcp"
+                                "ContainerPort": 3000
                             }
                         ]
                     }
