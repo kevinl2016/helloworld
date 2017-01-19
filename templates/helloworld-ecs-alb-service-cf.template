@@ -1,0 +1,132 @@
+{
+    "Parameters": {
+        "PublicSubnet": {
+            "ConstraintDescription": "PublicSubnet",
+            "Description": "PublicSubnet",
+            "Type": "List<AWS::EC2::Subnet::Id>"
+        },
+        "VpcId": {
+            "Description": "VPC",
+            "Type": "AWS::EC2::VPC::Id"
+        }
+    },
+    "Resources": {
+        "LoadBalancer": {
+            "Properties": {
+                "ConnectionDrainingPolicy": {
+                    "Enabled": true,
+                    "Timeout": 10
+                },
+                "CrossZone": "true",
+                "HealthCheck": {
+                    "HealthyThreshold": "5",
+                    "Interval": "20",
+                    "Target": "HTTP:3000/",
+                    "Timeout": "15",
+                    "UnhealthyThreshold": "2"
+                },
+                "Listeners": [
+                    {
+                        "InstancePort": "3000",
+                        "InstanceProtocol": "HTTP",
+                        "LoadBalancerPort": "3000",
+                        "Protocol": "HTTP"
+                    }
+                ],
+                "Scheme": "internet-facing",
+                "SecurityGroups": [
+                    {
+                        "Ref": "LoadBalancerSecurityGroup"
+                    }
+                ],
+                "Subnets": {
+                    "Ref": "PublicSubnet"
+                }
+            },
+            "Type": "AWS::ElasticLoadBalancing::LoadBalancer"
+        },
+        "LoadBalancerSecurityGroup": {
+            "Properties": {
+                "GroupDescription": "Web load balancer security group.",
+                "SecurityGroupIngress": [
+                    {
+                        "CidrIp": "0.0.0.0/0",
+                        "FromPort": "3000",
+                        "IpProtocol": "tcp",
+                        "ToPort": "3000"
+                    }
+                ],
+                "VpcId": {
+                    "Ref": "VpcId"
+                }
+            },
+            "Type": "AWS::EC2::SecurityGroup"
+        },
+        "ServiceRole": {
+            "Properties": {
+                "AssumeRolePolicyDocument": {
+                    "Statement": [
+                        {
+                            "Action": [
+                                "sts:AssumeRole"
+                            ],
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": [
+                                    "ecs.amazonaws.com"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                "ManagedPolicyArns": [
+                    "arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceRole"
+                ],
+                "Path": "/"
+            },
+            "Type": "AWS::IAM::Role"
+        },
+        "service": {
+            "Properties": {
+                "Cluster": "ecs-cleaned-1-ECSCluster-V8PRH1P1WXZB",
+                "DesiredCount": 1,
+                "LoadBalancers": [
+                    {
+                        "ContainerName": "mycontainer",
+                        "ContainerPort": 3000,
+                        "LoadBalancerName": {
+                            "Ref": "LoadBalancer"
+                        }
+                    }
+                ],
+                "Role": {
+                    "Ref": "ServiceRole"
+                },
+                "TaskDefinition": {
+                    "Ref": "task"
+                }
+            },
+            "Type": "AWS::ECS::Service"
+        },
+        "task": {
+            "Properties": {
+                "ContainerDefinitions": [
+                    {
+                        "Cpu": 256,
+                        "Image": "511912822958.dkr.ecr.us-east-1.amazonaws.com/helloworld:latest",
+                        "Memory": 32,
+                        "Name": "mycontainer",
+                        "PortMappings": [
+                            {
+                                "ContainerPort": 3000,
+                                "HostPort": 3000,
+                                "Protocol": "tcp"
+                            }
+                        ]
+                    }
+                ]
+            },
+            "Type": "AWS::ECS::TaskDefinition"
+        }
+    }
+}
