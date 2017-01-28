@@ -4,6 +4,7 @@ phases:
     commands:
       - env
       - git init
+      - git rev-parse HEAD
       - find .
       - printf "%s:%s" "$REPOSITORY_URI" "$(cat .git/refs/heads/master)" > /tmp/build_tag.out
       - printf '{"tag":"%s"}' "$(cat .git/refs/heads/master)" > /tmp/build.json
