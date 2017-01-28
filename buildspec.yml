@@ -2,6 +2,8 @@ version: 0.1
 phases:
   pre_build:
     commands:
+      - git rev-parse HEAD
+      - find .
       - printf "%s:%s" "$REPOSITORY_URI" "$(cat .git/refs/heads/master)" > /tmp/build_tag.out
       - printf '{"tag":"%s"}' "$(cat .git/refs/heads/master)" > /tmp/build.json
       - $(aws ecr get-login)
