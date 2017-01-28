@@ -4,17 +4,17 @@ phases:
     commands:
       - env
       - find .
-      - aws codepipeline --region us-east-1 get-pipeline-state --name helloworld 
-      #| jq -c '.stageStates\[\] | select(.actionStates\[\] | .latestExecution.externalExecutionId=="'$CODEBUILD_BUILD_ID'") | .latestExecution.pipelineExecutionId' | xargs aws codepipeline get-pipeline-execution --pipeline-name helloworld --pipeline-execution-id | jq -r -c '.pipelineExecution.artifactRevisions\[0\].revisionId' 
-      - printf "%s:%s" "$REPOSITORY_URI" "$(cat .git/refs/heads/master)" > /tmp/build_tag.out
-      - printf '{"tag":"%s"}' "$(cat .git/refs/heads/master)" > /tmp/build.json
+      - aws codepipeline --region us-east-1 get-pipeline-state --name "$REPOSITORY_NAME" --query 'stageStates[?actionStates[0].latestExecution.externalExecutionId==`helloworld:59af8643-f5cc-4682-95f2-a8690cf5fbfd`]'.latestExecution.pipelineExecutionId --output=text > /tmp/execution_id.txt
+      - aws codepipeline get-pipeline-execution --pipeline-name "$REPOSITORY_NAME" --pipeline-execution-id $(/tmp/execution_id.txt) --query 'pipelineExecution.artifactRevisions[0].revisionId' --output=text > /tmp/tag.txt
+      - printf "%s:%s" "$REPOSITORY_URI" "$(cat /tmp/tag.txt)" > /tmp/build_tag.txt
+      - printf '{"tag":"%s"}' "$(cat /tmp/tag.txt)" > /tmp/build.json
       - $(aws ecr get-login)
   build:
     commands:
-      - docker build -t "$(cat /tmp/build_tag.out)" .
+      - docker build -t "$(cat /tmp/build_tag.txt)" .
   post_build:
     commands:
-      - docker push "$(cat /tmp/build_tag.out)"
+      - docker push "$(cat /tmp/build_tag.txt)"
       - aws ecr batch-get-image --repository-name $REPOSITORY_NAME --image-ids imageTag=foobar --query 'images[].imageManifest' --output text > /tmp/latest_manifest.json
       - aws ecr put-image --repository-name $REPOSITORY_NAME --image-tag latest --image-manifest (cat /tmp/latest_manifest.json)
 artifacts:
