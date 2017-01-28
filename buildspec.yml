@@ -4,10 +4,10 @@ phases:
     commands:
       - env
       - find .
-      - aws codepipeline --region us-east-1 get-pipeline-state --name "$REPOSITORY_NAME" --query 'stageStates[?actionStates[0].latestExecution.externalExecutionId==`helloworld:59af8643-f5cc-4682-95f2-a8690cf5fbfd`]'.latestExecution.pipelineExecutionId --output=text > /tmp/execution_id.txt
-      - aws codepipeline get-pipeline-execution --pipeline-name "$REPOSITORY_NAME" --pipeline-execution-id $(cat /tmp/execution_id.txt) --query 'pipelineExecution.artifactRevisions[0].revisionId' --output=text > /tmp/tag.txt
-      - printf "%s:%s" "$REPOSITORY_URI" "$(cat /tmp/tag.txt)" > /tmp/build_tag.txt
-      - printf '{"tag":"%s"}' "$(cat /tmp/tag.txt)" > /tmp/build.json
+      - aws codepipeline --region us-east-1 get-pipeline-state --name "$REPOSITORY_NAME" --query 'stageStates[?actionStates[0].latestExecution.externalExecutionId==`'$CODEBUILD_BUILD_ID'`]'.latestExecution.pipelineExecutionId --output=text | tee /tmp/execution_id.txt
+      - aws codepipeline get-pipeline-execution --pipeline-name "$REPOSITORY_NAME" --pipeline-execution-id $(cat /tmp/execution_id.txt) --query 'pipelineExecution.artifactRevisions[0].revisionId' --output=text | tee /tmp/tag.txt
+      - printf "%s:%s" "$REPOSITORY_URI" "$(cat /tmp/tag.txt)" | tee /tmp/build_tag.txt
+      - printf '{"tag":"%s"}' "$(cat /tmp/tag.txt)" | tee /tmp/build.json
       - $(aws ecr get-login)
   build:
     commands:
