@@ -4,7 +4,8 @@ phases:
     commands:
       - env
       - find .
-      - aws codepipeline --region us-east-1 get-pipeline-state --name helloworld | jq -c '.stageStates\[\] | select(.actionStates\[\] | .latestExecution.externalExecutionId=="'$CODEBUILD_BUILD_ID'") | .latestExecution.pipelineExecutionId' | xargs aws codepipeline get-pipeline-execution --pipeline-name helloworld --pipeline-execution-id | jq -r -c '.pipelineExecution.artifactRevisions\[0\].revisionId' 
+      - aws codepipeline --region us-east-1 get-pipeline-state --name helloworld 
+      #| jq -c '.stageStates\[\] | select(.actionStates\[\] | .latestExecution.externalExecutionId=="'$CODEBUILD_BUILD_ID'") | .latestExecution.pipelineExecutionId' | xargs aws codepipeline get-pipeline-execution --pipeline-name helloworld --pipeline-execution-id | jq -r -c '.pipelineExecution.artifactRevisions\[0\].revisionId' 
       - printf "%s:%s" "$REPOSITORY_URI" "$(cat .git/refs/heads/master)" > /tmp/build_tag.out
       - printf '{"tag":"%s"}' "$(cat .git/refs/heads/master)" > /tmp/build.json
       - $(aws ecr get-login)
