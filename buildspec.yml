@@ -3,6 +3,8 @@ phases:
   pre_build:
     commands:
       - find .
+      - env
+      - echo $revision
       - printf "%s:%s" "$REPOSITORY_URI" "$(cat .git/refs/heads/master)" > /tmp/build_tag.out
       - printf '{"tag":"%s"}' "$(cat .git/refs/heads/master)" > /tmp/build.json
       - $(aws ecr get-login)
