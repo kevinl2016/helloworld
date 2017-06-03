@@ -1,5 +1,5 @@
 var http = require("http")
-var winston = require("Winston")
+var winston = require("winston")
 
 var version = process.env.HELLOWORLD_VERSION
 

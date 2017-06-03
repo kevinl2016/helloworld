@@ -8,7 +8,7 @@ files:
   - source: conf/logrotate
     destination: /etc/logrotate.d/helloworld
   - source: node_modules
-    destination: /usr/local/helloworld/
+    destination: /usr/local/helloworld/node_modules
 hooks:
   BeforeInstall:
     - location: scripts/stop.sh
